@@ -1,138 +1,169 @@
 package org.godotengine.godot;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-
 import android.util.Log;
-import android.view.View;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Intent;
-import android.provider.Settings;
+import android.content.IntentSender.SendIntentException;
+
 import com.google.android.gms.plus.Plus;
 import com.google.android.gms.games.Games;
-import com.google.android.gms.drive.Drive;
+import com.google.android.gms.games.GamesActivityResultCodes;
+
 import com.google.android.gms.common.ConnectionResult;
-import android.content.IntentSender.SendIntentException;
+import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
-import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
 
 public class GodotGooglePlayGameServices extends Godot.SingletonBase
 {
 
-    private static final int                RC_SAVED_GAMES = 9002;
-    private static final int                RC_SIGN_IN = 9001;
-    private static final int                REQUEST_ACHIEVEMENTS = 9002;
+    private static final int REQUEST_RESOLVE_ERROR = 1001;
+	private static final int REQUEST_LEADERBOARD = 1002;
+    private static final int REQUEST_ACHIEVEMENTS = 9002;
 
-    private int device_id;
-    private Activity activity;
-    private GoogleApiClient googleApiClient;
-    private Boolean requestSignIn = false;
-    private Boolean intentInProgress = false;
+    private Activity activity = null;
+    private GoogleApiClient client = null;
+    private boolean isResolvingError = false;
+
     private Boolean googlePlayConndected = false;
 
-    /**
-     * Singleton
-     */
-    static public Godot.SingletonBase initialize(Activity activity)
-    {
-        return new GodotGoogleGamePlayServices(activity);
-    }
+    /* Connection Methods
+     * ********************************************************************** */
 
     /**
      * Initialization
      */
     public void init() {
-        device_id = this.getDeviceId();
         activity.runOnUiThread(new Runnable()
         {
             @Override
             public void run()
             {
-                googleApiClient = new GoogleApiClient.Builder(activity).addConnectionCallbacks(new ConnectionCallbacks()
+                client = new GoogleApiClient.Builder(activity).addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks()
                 {
                     @Override
                     public void onConnected(Bundle bundle) {
-                        googlePlayConndected = true;
                         Log.d("godot", "GPGS: Connected");
                     }
                     @Override
                     public void onConnectionSuspended(int cause) {
-                        Log.d("godot", "GPGS: Suspended");
+                        Log.d("godot", "GPGS: Suspended->" + cause);
                     }
-                }).addOnConnectionFailedListener(new OnConnectionFailedListener()
+                }).addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener()
                 {
                     @Override
                     public void onConnectionFailed(ConnectionResult result) {
-                        Log.w("godot", "Connection failed: " + String.valueOf(result));
-
-                        if(!intentInProgress && result.hasResolution()) {
+                        if (isResolvingError) {
+                            Log.d("godot", "GPGS: onConnectionFailed->" + result.toString());
+							return;
+						} else if (result.hasResolution()) {
                             try {
-                                intentInProgress = true;
-                                activity.startIntentSenderForResult(result.getResolution().getIntentSender(), RC_SIGN_IN, null, 0, 0, 0);
-                            } catch (SendIntentException ex) {
-                                intentInProgress = false;
-                                googleApiClient.connect();
+                                isResolvingError = true;
+                                result.startResolutionForResult(activity, REQUEST_RESOLVE_ERROR);
+                            } catch (SendIntentException e) {
+                                Log.d("godot", "GPGS: onConnectionFailed, try again");
+								client.connect();
                             }
+                        } else {
+                            Log.d("godot", "GPGS: onConnectionFailed->" + result.toString());
+                            isResolvingError = true;
+                            GooglePlayServicesUtil.getErrorDialog(result.getErrorCode(), activity, 0).show();
                         }
                     }
-                })
-                .addApi(Games.API).addScope(Games.SCOPE_GAMES)
+                }) // .setShowConnectingPopup(false)
                 .addApi(Plus.API).addScope(Plus.SCOPE_PLUS_LOGIN)
-                .addApi(Drive.API).addScope(Drive.SCOPE_APPFOLDER)
+                .addApi(Games.API).addScope(Games.SCOPE_GAMES)
                 .build();
+
+                isResolvingError = false;
+				client.connect();
+
+                Log.d("godot", "GPGS: Init");
             }
         });
-    }
-
-    /**
-     * Sign In method
-     */
-    public void signIn() {
-        activity.runOnUiThread(new Runnable()
-        {
-            @Override
-            public void run() {
-                googleApiClient.connect();
-            }
-        });
-    }
-
-    /**
-     * Sign Out method
-     */
-    public void signOut() {
-        disconnect();
     }
 
     /**
      * Internal disconnect method
      */
     private void disconnect() {
-        activity.runOnUiThread(new Runnable()
-        {
-            @Override
-            public void run() {
-                if(googleApiClient.isConnected()) {
-                    Games.signOut(googleApiClient);
-                    googleApiClient.disconnect();
-                    googlePlayConndected = false;
-                }
-                Log.d("godot", "GPGS: disconnect");
-            }
-        });
+        Plus.AccountApi.clearDefaultAccount(client);
+		client.disconnect();
+        Log.d("godot", "GPGS: disconnected.");
     }
 
+    @Override
+    protected void onMainActivityResult(int requestCode, int responseCode, Intent intent)
+	{
+		switch(requestCode) {
+            case REQUEST_RESOLVE_ERROR:
+                if (responseCode != Activity.RESULT_OK) {
+				    Log.d("godot", "GPGS: onMainActivityResult, REQUEST_RESOLVE_ERROR = " + responseCode);
+                }
+                isResolvingError = true;
+                if (!client.isConnecting() && !client.isConnected()) {
+                    client.connect();
+                }
+                break;
+            case REQUEST_LEADERBOARD:
+                Log.d("godot", "GPGS: onMainActivityResult, REQUEST_LEADERBOARD = " + responseCode);
+                if(responseCode == GamesActivityResultCodes.RESULT_RECONNECT_REQUIRED) {
+                    disconnect();
+                }
+                break;
+        }
+	}
+
     /**
-     * Check if the user is connected
+     * Sign In method
      */
-    public void isLoggedIn() {
-        GodotLib.calldeferred(device_id, "is_user_logged_in", new Object[]
-        {
-            (boolean) googlePlayConndected
-        });
-    }
+    public void signIn()
+	{
+		activity.runOnUiThread(new Runnable()
+		{
+			@Override
+            public void run()
+			{
+				if (!client.isConnecting()) {
+					isResolvingError = false;
+					client.connect();
+                    Log.d("godot", "GPGS: signIn");
+				}
+			}
+		});
+	}
+
+    /**
+     * Sign Out method
+     */
+	public void signOut()
+	{
+		activity.runOnUiThread(new Runnable()
+		{
+			@Override
+            public void run()
+			{
+				if (client != null && client.isConnected()) {
+					disconnect();
+                    Log.d("godot", "GPGS: signOut");
+				}
+			}
+		});
+	}
+
+    /**
+     * Get the client status
+     * @return int Return 1 for Conecting..., 2 for Connected, 0 in any other case
+     */
+    public int getStatus()
+	{
+		if (client.isConnecting()) return 1;
+		if (client.isConnected()) return 2;
+		return 0;
+	}
+
+    /* Achievements Methods
+     * ********************************************************************** */
 
     /**
      * Increment Achivement
@@ -140,16 +171,14 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
      * @param int incrementAmount The amount for increment
      */
     public void incrementAchy(final String achievementId, final int incrementAmount) {
-        if(googlePlayConndected) {
-            activity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Games.Achievements.increment(googleApiClient, achievementId, incrementAmount);
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (client != null && client.isConnected()) {
+                    Games.Achievements.increment(client, achievementId, incrementAmount);
                 }
-            });
-        } else {
-            Log.w("godot", "GPGS: incrementAchy - Not connected.");
-        }
+            }
+        });
     }
 
     /**
@@ -157,83 +186,81 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
      * @param String achievementId Achivement to unlock
      */
     public void unlockAchy(final String achievementId) {
-        if(googlePlayConndected) {
-            activity.runOnUiThread(new Runnable()
-            {
-                @Override
-                public void run() {
-                    Games.Achievements.unlock(googleApiClient, achievementId);
+        activity.runOnUiThread(new Runnable()
+        {
+            @Override
+            public void run() {
+                if (client != null && client.isConnected()) {
+                    Games.Achievements.unlock(client, achievementId);
                 }
-            });
-        } else {
-            Log.w("godot", "GPGS: unlockAchy - Not connected.");
-        }
+            }
+        });
     }
 
     /**
      * Show Achivements List
      */
     public void showAchyList() {
-        if(googlePlayConndected) {
-            activity.runOnUiThread(new Runnable()
-            {
-                @Override
-                public void run() {
-                    activity.startActivityForResult(Games.Achievements.getAchievementsIntent(googleApiClient), REQUEST_ACHIEVEMENTS);
+        activity.runOnUiThread(new Runnable()
+        {
+            @Override
+            public void run() {
+                if (client != null && client.isConnected()) {
+                    activity.startActivityForResult(Games.Achievements.getAchievementsIntent(client), REQUEST_ACHIEVEMENTS);
                 }
-            });
-        } else {
-            Log.w("godot", "GPGS: showAchyList - Not connected.");
-        }
-    }
-
-    protected void onMainActivityResult(int requestCode, int resultCode, Intent data) {
-        if(requestCode == RC_SIGN_IN) {
-            intentInProgress = false;
-
-            if(!googleApiClient.isConnecting()) {
-                googleApiClient.connect();
             }
-        }
+        });
     }
 
-    /**
-	 * Generate MD5 for the deviceID
-	 * @param String s The string to generate de MD5
-	 * @return String The MD5 generated
-	 */
-	private String md5(final String s)
-	{
-		try {
-			// Create MD5 Hash
-			MessageDigest digest = MessageDigest.getInstance("MD5");
-			digest.update(s.getBytes());
-			byte messageDigest[] = digest.digest();
-
-			// Create Hex String
-			StringBuffer hexString = new StringBuffer();
-			for (int i=0; i<messageDigest.length; i++) {
-				String h = Integer.toHexString(0xFF & messageDigest[i]);
-				while (h.length() < 2) h = "0" + h;
-				hexString.append(h);
-			}
-			return hexString.toString();
-		} catch(NoSuchAlgorithmException e) {
-			//Logger.logStackTrace(TAG,e);
-		}
-		return "";
-	}
+    /* Leaderboards Methods
+     * ********************************************************************** */
 
     /**
-	 * Get the Device ID
-	 * @return String Device ID
-	 */
-	private String getDeviceId()
-	{
-		String android_id = Settings.Secure.getString(activity.getContentResolver(), Settings.Secure.ANDROID_ID);
-		String deviceId = md5(android_id).toUpperCase();
-		return deviceId;
-	}
+     * Upload score to a leaderboard
+     * @param String id Id of the leaderboard
+     * @param int score Score to upload to the leaderboard
+     */
+    public void leaderSubmit(final String id, final int score)
+ 	{
+ 		activity.runOnUiThread(new Runnable()
+ 		{
+ 			@Override public void run()
+ 			{
+ 				if (client != null && client.isConnected()) {
+ 					Games.Leaderboards.submitScore(client, id, score);
+                    Log.d("godot", "GPGS: leaderSubmit");
+ 				}
+ 			}
+ 		});
+ 	}
+
+    /**
+     * Show leader board
+     */
+    public void showLeaderList(final String id)
+    {
+        activity.runOnUiThread(new Runnable()
+ 		{
+ 			@Override public void run()
+ 			{
+ 				if (client != null && client.isConnected()) {
+ 					activity.startActivityForResult(Games.Leaderboards.getLeaderboardIntent(client, id), REQUEST_LEADERBOARD);
+                    Log.d("godot", "GPGS: leaderShow");
+ 				}
+ 			}
+ 		});
+    }
+
+    /* Godot Methods
+     * ********************************************************************** */
+
+     /**
+      * Singleton
+      */
+     static public Godot.SingletonBase initialize(Activity activity)
+     {
+         return new GodotGooglePlayGameServices(activity);
+     }
 
     /**
      * Constructor
@@ -242,7 +269,9 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
     public GodotGooglePlayGameServices(Activity activity) {
         this.activity = activity;
         registerClass("GodotGooglePlayGameServices", new String[] {
-            "init", "signIn", "signOut", "unlockAchy", "incrementAchy", "showAchyList", "isLoggedIn"
+            "init", "signIn", "signOut", "getStatus",
+            "unlockAchy", "incrementAchy", "showAchyList",
+            "leaderSubmit", "showLeaderList"
         });
     }
 }

@@ -170,12 +170,12 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
      * @param String achievementId Achivement to increment
      * @param int incrementAmount The amount for increment
      */
-    public void incrementAchy(final String achievementId, final int incrementAmount) {
+    public void incrementAchy(final String id, final int increment) {
         activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (client != null && client.isConnected()) {
-                    Games.Achievements.increment(client, achievementId, incrementAmount);
+                    Games.Achievements.increment(client, id, increment);
                 }
             }
         });
@@ -185,13 +185,13 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
      * Unlock Achivement
      * @param String achievementId Achivement to unlock
      */
-    public void unlockAchy(final String achievementId) {
+    public void unlockAchy(final String id) {
         activity.runOnUiThread(new Runnable()
         {
             @Override
             public void run() {
                 if (client != null && client.isConnected()) {
-                    Games.Achievements.unlock(client, achievementId);
+                    Games.Achievements.unlock(client, id);
                 }
             }
         });

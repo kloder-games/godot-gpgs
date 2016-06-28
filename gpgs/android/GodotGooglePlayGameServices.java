@@ -80,7 +80,8 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
                             GooglePlayServicesUtil.getErrorDialog(result.getErrorCode(), activity, 0).show();
                         }
                     }
-                }) // .setShowConnectingPopup(false)
+                })
+                //.setShowConnectingPopup(false)
                 .addApi(Plus.API).addScope(Plus.SCOPE_PLUS_LOGIN)
                 .addApi(Games.API).addScope(Games.SCOPE_GAMES)
                 .build();
@@ -273,26 +274,31 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
  			@Override public void run()
  			{
  				if (client != null && client.isConnected()) {
-                    Games.Leaderboards.loadCurrentPlayerLeaderboardScore(client, id, LeaderboardVariant.TIME_SPAN_DAILY, LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback(new ResultCallback<LoadPlayerScoreResult>()
+                    Games.Leaderboards.loadCurrentPlayerLeaderboardScore(client, id, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback(new ResultCallback<LoadPlayerScoreResult>()
                     {
                         @Override
                         public void onResult(LoadPlayerScoreResult result) {
                             Status status = result.getStatus();
                             if (status.getStatusCode() == GamesStatusCodes.STATUS_OK) {
                                 LeaderboardScore score = result.getScore();
-                                int scoreValue = (int) score.getRawScore();
-                                Log.d("godot", "GPGS: Leaderboard values is " + scoreValue);
-                                GodotLib.calldeferred(instance_id, "_on_leaderboard_get_value", new Object[]{ scoreValue });
+                                if (score != null) {
+                                    int scoreValue = (int) score.getRawScore();
+                                    Log.d("godot", "GPGS: Leaderboard values is " + score.getDisplayScore());
+                                    GodotLib.calldeferred(instance_id, "_on_leaderboard_get_value", new Object[]{ scoreValue });
+                                } else {
+                                    Log.d("godot", "GPGS: getLeaderboardValue STATUS_OK but is NULL -> Request again...");
+                                    getLeaderboardValue(id);
+                                }
                             } else if (status.getStatusCode() == GamesStatusCodes.STATUS_CLIENT_RECONNECT_REQUIRED) {
-                                Log.d("godot", "GPGS: Leaderboard reconnecting required");
+                                Log.d("godot", "GPGS: getLeaderboardValue reconnect required -> reconnecting...");
                                 client.reconnect();
                             } else {
-                                Log.d("godot", "GPGS: Leaderboard connection error -> " + status.getStatusMessage());
+                                Log.d("godot", "GPGS: getLeaderboardValue connection error -> " + status.getStatusMessage());
                                 GodotLib.calldeferred(instance_id, "_on_leaderboard_get_value_error", new Object[]{ });
                             }
                         }
                     });
-                    Log.d("godot", "GPGS: Leaderboard get score");
+                    Log.d("godot", "GPGS: getLeaderboardValue '" + id + "'.");
  				}
  			}
  		});

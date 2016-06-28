@@ -118,6 +118,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
                 Log.d("godot", "GPGS: onMainActivityResult, REQUEST_LEADERBOARD = " + responseCode);
                 if(responseCode == GamesActivityResultCodes.RESULT_RECONNECT_REQUIRED) {
                     disconnect();
+                    client.connect();
                 }
                 break;
         }
@@ -176,8 +177,8 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
 
     /**
      * Increment Achivement
-     * @param String achievementId Achivement to increment
-     * @param int incrementAmount The amount for increment
+     * @param String id Achivement to increment
+     * @param int amount The amount for increment
      */
     public void incrementAchy(final String id, final int increment) {
         activity.runOnUiThread(new Runnable() {
@@ -192,7 +193,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
 
     /**
      * Unlock Achivement
-     * @param String achievementId Achivement to unlock
+     * @param String id Achivement to unlock
      */
     public void unlockAchy(final String id) {
         activity.runOnUiThread(new Runnable()
@@ -245,6 +246,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
 
     /**
      * Show leader board
+     * @param String id Id of the leaderboard
      */
     public void showLeaderList(final String id)
     {
@@ -260,6 +262,10 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
  		});
     }
 
+    /**
+     * Get a leaderboard value (in a callback)
+     * @param String id Id of the leaderboard
+     */
     public void getLeaderboardValue(final String id)
     {
         activity.runOnUiThread(new Runnable()

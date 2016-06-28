@@ -18,6 +18,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 
 public class GodotGooglePlayGameServices extends Godot.SingletonBase
 {
@@ -117,8 +118,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
             case REQUEST_LEADERBOARD:
                 Log.d("godot", "GPGS: onMainActivityResult, REQUEST_LEADERBOARD = " + responseCode);
                 if(responseCode == GamesActivityResultCodes.RESULT_RECONNECT_REQUIRED) {
-                    disconnect();
-                    client.connect();
+                    client.reconnect();
                 }
                 break;
         }
@@ -277,13 +277,17 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
                     {
                         @Override
                         public void onResult(LoadPlayerScoreResult result) {
-                            if (result.getStatus().getStatusCode() == GamesStatusCodes.STATUS_OK) {
+                            Status status = result.getStatus();
+                            if (status.getStatusCode() == GamesStatusCodes.STATUS_OK) {
                                 LeaderboardScore score = result.getScore();
                                 int scoreValue = (int) score.getRawScore();
                                 Log.d("godot", "GPGS: Leaderboard values is " + scoreValue);
                                 GodotLib.calldeferred(instance_id, "_on_leaderboard_get_value", new Object[]{ scoreValue });
+                            } else if (status.getStatusCode() == GamesStatusCodes.STATUS_CLIENT_RECONNECT_REQUIRED) {
+                                Log.d("godot", "GPGS: Leaderboard reconnecting required");
+                                client.reconnect();
                             } else {
-                                Log.d("godot", "GPGS: Leaderboard connection error");
+                                Log.d("godot", "GPGS: Leaderboard connection error -> " + status.getStatusMessage());
                                 GodotLib.calldeferred(instance_id, "_on_leaderboard_get_value_error", new Object[]{ });
                             }
                         }

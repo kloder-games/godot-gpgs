@@ -8,11 +8,16 @@ import android.content.IntentSender.SendIntentException;
 
 import com.google.android.gms.plus.Plus;
 import com.google.android.gms.games.Games;
+import com.google.android.gms.games.GamesStatusCodes;
 import com.google.android.gms.games.GamesActivityResultCodes;
+import com.google.android.gms.games.leaderboard.Leaderboards.LoadPlayerScoreResult;
+import com.google.android.gms.games.leaderboard.LeaderboardVariant;
+import com.google.android.gms.games.leaderboard.LeaderboardScore;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
 
 public class GodotGooglePlayGameServices extends Godot.SingletonBase
 {
@@ -22,6 +27,8 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
     private static final int REQUEST_ACHIEVEMENTS = 9002;
 
     private Activity activity = null;
+    private int instance_id = 0;
+
     private GoogleApiClient client = null;
     private boolean isResolvingError = false;
 
@@ -33,7 +40,8 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
     /**
      * Initialization
      */
-    public void init() {
+    public void init(final int instance_id) {
+        this.instance_id = instance_id;
         activity.runOnUiThread(new Runnable()
         {
             @Override
@@ -43,6 +51,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
                 {
                     @Override
                     public void onConnected(Bundle bundle) {
+                        GodotLib.calldeferred(instance_id, "on_google_play_game_services_connected", new Object[] { });
                         Log.d("godot", "GPGS: Connected");
                     }
                     @Override
@@ -251,6 +260,34 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
  		});
     }
 
+    public void getLeaderboardValue(final String id)
+    {
+        activity.runOnUiThread(new Runnable()
+ 		{
+ 			@Override public void run()
+ 			{
+ 				if (client != null && client.isConnected()) {
+                    Games.Leaderboards.loadCurrentPlayerLeaderboardScore(client, id, LeaderboardVariant.TIME_SPAN_DAILY, LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback(new ResultCallback<LoadPlayerScoreResult>()
+                    {
+                        @Override
+                        public void onResult(LoadPlayerScoreResult result) {
+                            if (result.getStatus().getStatusCode() == GamesStatusCodes.STATUS_OK) {
+                                LeaderboardScore score = result.getScore();
+                                int scoreValue = (int) score.getRawScore();
+                                Log.d("godot", "GPGS: Leaderboard values is " + scoreValue);
+                                GodotLib.calldeferred(instance_id, "_on_leaderboard_get_value", new Object[]{ scoreValue });
+                            } else {
+                                Log.d("godot", "GPGS: Leaderboard connection error");
+                                GodotLib.calldeferred(instance_id, "_on_leaderboard_get_value_error", new Object[]{ });
+                            }
+                        }
+                    });
+                    Log.d("godot", "GPGS: Leaderboard get score");
+ 				}
+ 			}
+ 		});
+    }
+
     /* Godot Methods
      * ********************************************************************** */
 
@@ -271,7 +308,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
         registerClass("GodotGooglePlayGameServices", new String[] {
             "init", "signIn", "signOut", "getStatus",
             "unlockAchy", "incrementAchy", "showAchyList",
-            "leaderSubmit", "showLeaderList"
+            "leaderSubmit", "showLeaderList", "getLeaderboardValue"
         });
     }
 }

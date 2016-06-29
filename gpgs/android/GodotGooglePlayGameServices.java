@@ -15,7 +15,6 @@ import com.google.android.gms.games.leaderboard.LeaderboardVariant;
 import com.google.android.gms.games.leaderboard.LeaderboardScore;
 
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
@@ -77,7 +76,6 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
                         } else {
                             Log.d("godot", "GPGS: onConnectionFailed->" + result.toString());
                             isResolvingError = true;
-                            GooglePlayServicesUtil.getErrorDialog(result.getErrorCode(), activity, 0).show();
                         }
                     }
                 })

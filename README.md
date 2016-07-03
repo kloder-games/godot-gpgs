@@ -49,12 +49,24 @@ API Reference
 
 The following methods are available:
 ```python
-# Init GooglePlayGameServices (SignIn is included)
+# Init GooglePlayGameServices
 # @param int instance_id The instance id from Godot (get_instance_ID())
 init(instance_id)
 
 # Connected callback
-on_google_play_game_services_connected()
+func _on_google_play_game_services_connected()
+
+# Network Lost callback
+func _on_google_play_game_services_suspended_network_lost()
+
+# Service disconnected callback
+func _on_google_play_game_services_suspended_service_disconnected()
+
+# Disconected by unknown causes callback
+func _on_google_play_game_services_suspended_unknown()
+
+# On disconected method callback
+func _on_google_play_game_services_disconnected()
 
 # Sign In method
 signIn()
@@ -89,6 +101,14 @@ showAchyList()
 # @param int score Score to upload to the leaderboard
 leaderSubmit(String id, int score)
 
+# On submitted leaderboard score OK
+# @param String id Id of the leaderboard (sometimes you maybe want more than one at the same time)
+func _on_google_play_game_services_leaderboard_submitted_ok(id)
+
+# On submitted leaderboard score Error
+# @param String id Id of the leaderboard (sometimes you maybe want more than one at the same time)
+func _on_leaderboard_submit_error(id)
+
 # Show leader board
 # @param String id Id of the leaderboard
 showLeaderList(String id)
@@ -99,10 +119,12 @@ getLeaderboardValue(id)
 
 # Callback when the score is ok
 # @param int score Score returned
-_on_leaderboard_get_value(score)
+# @param String id Id of the leaderboard (sometimes you maybe want more than one at the same time)
+func _on_leaderboard_get_value(score, id)
 
 # Callback when the score is on error
-_on_leaderboard_get_value_error()
+# @param String id Id of the leaderboard (sometimes you maybe want more than one at the same time)
+func _on_leaderboard_get_value_error(id)
 ```
 
 References

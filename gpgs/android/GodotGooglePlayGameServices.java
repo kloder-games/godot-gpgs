@@ -58,19 +58,19 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
                 {
                     @Override
                     public void onConnected(Bundle bundle) {
-                        GodotLib.calldeferred(instance_id, "on_google_play_game_services_connected", new Object[] { });
+                        GodotLib.calldeferred(instance_id, "_on_google_play_game_services_connected", new Object[] { });
                         Log.d("godot", "GPGS: onConnected");
                     }
                     @Override
                     public void onConnectionSuspended(int cause) {
                         if (cause == GoogleApiClient.ConnectionCallbacks.CAUSE_NETWORK_LOST) {
-                            GodotLib.calldeferred(instance_id, "on_google_play_game_services_suspended_network_lost", new Object[] { });
+                            GodotLib.calldeferred(instance_id, "_on_google_play_game_services_suspended_network_lost", new Object[] { });
                             Log.d("godot", "GPGS: onConnectionSuspended -> Network Lost");
                         } else if (cause == GoogleApiClient.ConnectionCallbacks.CAUSE_SERVICE_DISCONNECTED) {
-                            GodotLib.calldeferred(instance_id, "on_google_play_game_services_suspended_service_disconnected", new Object[] { });
+                            GodotLib.calldeferred(instance_id, "_on_google_play_game_services_suspended_service_disconnected", new Object[] { });
                             Log.d("godot", "GPGS: onConnectionSuspended -> Service Disconnected");
                         } else {
-                            GodotLib.calldeferred(instance_id, "on_google_play_game_services_suspended_unknown", new Object[] { });
+                            GodotLib.calldeferred(instance_id, "_on_google_play_game_services_suspended_unknown", new Object[] { });
                             Log.d("godot", "GPGS: onConnectionSuspended -> Unknown");
                         }
                     }
@@ -113,7 +113,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
     private void disconnect() {
         Plus.AccountApi.clearDefaultAccount(client);
 		client.disconnect();
-        GodotLib.calldeferred(instance_id, "on_google_play_game_services_disconnected", new Object[] { });
+        GodotLib.calldeferred(instance_id, "_on_google_play_game_services_disconnected", new Object[] { });
         Log.d("godot", "GPGS: disconnected.");
     }
 
@@ -263,13 +263,13 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
                             Status status = result.getStatus();
                             if (status.getStatusCode() == GamesStatusCodes.STATUS_OK) {
                                 Log.d("godot", "GPGS: leaderSubmit OK");
-                                GodotLib.calldeferred(instance_id, "on_google_play_game_services_leaderboard_submitted_ok", new Object[] { });
+                                GodotLib.calldeferred(instance_id, "_on_google_play_game_services_leaderboard_submitted_ok", new Object[] { id });
                             } else if (status.getStatusCode() == GamesStatusCodes.STATUS_CLIENT_RECONNECT_REQUIRED) {
                                 Log.d("godot", "GPGS: leaderSubmit reconnect required -> reconnecting...");
                                 client.reconnect();
                             } else {
                                 Log.d("godot", "GPGS: leaderSubmit connection error -> " + status.getStatusMessage());
-                                GodotLib.calldeferred(instance_id, "_on_leaderboard_submit_error", new Object[]{ });
+                                GodotLib.calldeferred(instance_id, "_on_leaderboard_submit_error", new Object[]{ id });
                             }
                         }
                     });
@@ -328,7 +328,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase
                                 client.reconnect();
                             } else {
                                 Log.d("godot", "GPGS: getLeaderboardValue connection error -> " + status.getStatusMessage());
-                                GodotLib.calldeferred(instance_id, "_on_leaderboard_get_value_error", new Object[]{ });
+                                GodotLib.calldeferred(instance_id, "_on_leaderboard_get_value_error", new Object[]{ id });
                             }
                         }
                     });

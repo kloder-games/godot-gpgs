@@ -135,7 +135,7 @@ func _on_leaderboard_get_value(score, id)
 func _on_leaderboard_get_value_error(id)
 ```
 
-You can find an example on "demo/gpgs.gd" file.
+You can find an example on "demo/GooglePlayGameServices.gd" file.
 
 References
 -------------

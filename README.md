@@ -50,6 +50,7 @@ Common errors
 If the plugin doesn't works:
 * Check this page: https://developers.google.com/games/services/android/troubleshooting
 * Check if the Google Play Console > Game Services > Linked Apps has your App linked. If your App has two keystores (one for develop and one for release) check that you have two entries in this screen one for each (debug and release), this gave me a good headache.
+* Check if you have the Drive API in the linked Google API Console.
 * In other case, please leave an Issue for fix it. Thanks!
 
 API Reference

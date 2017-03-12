@@ -8,6 +8,7 @@ import org.godotengine.godot.gpgs.Client;
 import org.godotengine.godot.gpgs.Achievements;
 import org.godotengine.godot.gpgs.Leaderboards;
 import org.godotengine.godot.gpgs.Snapshots;
+import org.godotengine.godot.gpgs.RealTimeMultiplayer;
 
 public class GodotGooglePlayGameServices extends Godot.SingletonBase {
 
@@ -21,6 +22,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase {
     private Leaderboards leaderboards;
     private Snapshots snapshots;
     private Achievements achievements;
+    private RealTimeMultiplayer realTimeMultiplayer;
 
     private static final String TAG = "godot";
 
@@ -42,7 +44,8 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase {
             "init", "signIn", "signOut", "getStatus",
             "saveSnapshot", "loadFromSnapshot",
             "unlockAchy", "incrementAchy", "showAchyList",
-            "leaderSubmit", "showLeaderList", "getLeaderboardValue"
+            "leaderSubmit", "showLeaderList", "getLeaderboardValue",
+            "invitePlayers", "showInvitationInbox", "sendReliableMessage", "sendBroadcastMessage", "leaveRoom"
         });
     }
 
@@ -63,11 +66,23 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase {
         leaderboards = new Leaderboards(activity, googleApiClient, instance_id);
         snapshots = new Snapshots(activity, googleApiClient, instance_id);
         achievements = new Achievements(activity, googleApiClient, instance_id);
+        realTimeMultiplayer = new RealTimeMultiplayer(activity, googleApiClient, instance_id);
     }
 
     @Override
-    protected void onMainActivityResult(int requestCode, int responseCode, Intent intent) {
-        client.onMainActivityResult(requestCode, responseCode, intent);
+    protected void onMainActivityResult(int request, int response, Intent intent) {
+        switch(request) {
+            case Client.RC_SIGN_IN:
+                if (client != null)
+                    client.onMainActivityResult(request, response, intent);
+                break;
+            case RealTimeMultiplayer.RC_SELECT_PLAYERS:
+            case RealTimeMultiplayer.RC_INVITATION_INBOX:
+            case RealTimeMultiplayer.RC_WAITING_ROOM:
+                if (realTimeMultiplayer != null)
+                    realTimeMultiplayer.onActivityResult(request, response, intent);
+                break;
+        }
 	}
 
     /**
@@ -177,6 +192,33 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase {
     public void getLeaderboardValue(final String id) {
         if (leaderboards == null) return;
         leaderboards.getLeaderboardValue(id);
+    }
+
+    /* Real Time Multiplayer Methods
+     * ********************************************************************** */
+    public void invitePlayers(final int min, final int max) {
+        if (realTimeMultiplayer == null) return;
+        realTimeMultiplayer.invitePlayers(min, max);
+    }
+
+    public void showInvitationInbox() {
+        if (realTimeMultiplayer == null) return;
+        realTimeMultiplayer.showInvitationInbox();
+    }
+
+    public void sendReliableMessage(String msg, String participantId) {
+        if (realTimeMultiplayer == null) return;
+        realTimeMultiplayer.sendReliableMessage(msg, participantId);
+    }
+
+    public void sendBroadcastMessage(String msg) {
+        if (realTimeMultiplayer == null) return;
+        realTimeMultiplayer.sendBroadcastMessage(msg);
+    }
+
+    public void leaveRoom() {
+        if (realTimeMultiplayer == null) return;
+        realTimeMultiplayer.leaveRoom();
     }
 
 }

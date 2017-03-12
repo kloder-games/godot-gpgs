@@ -25,7 +25,7 @@ public class Client {
     private static final int STATUS_OTHER = 0;
     private static final int STATUS_CONNECTING = 1;
     private static final int STATUS_CONNECTED = 2;
-    private static final int RC_SIGN_IN = 9001;
+    public static final int RC_SIGN_IN = 9001;
 
     private Activity activity = null;
     private int instance_id = 0;
@@ -84,6 +84,7 @@ public class Client {
                 .addApi(Plus.API).addScope(Plus.SCOPE_PLUS_LOGIN)
                 .addApi(Drive.API).addScope(Drive.SCOPE_APPFOLDER)
                 .build();
+                GodotLib.calldeferred(instance_id, "_on_google_play_game_services_initiated", new Object[] { });
             }
         });
     }
@@ -115,7 +116,7 @@ public class Client {
 
     public void onMainActivityResult(int requestCode, int responseCode, Intent intent) {
 		switch(requestCode) {
-            case RC_SIGN_IN:
+            case Client.RC_SIGN_IN:
                 isResolvingConnectionFailure = false;
                 if(!googleApiClient.isConnecting()) googleApiClient.connect();
                 break;

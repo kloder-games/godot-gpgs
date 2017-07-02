@@ -46,47 +46,42 @@ public class Client {
     }
 
     public void init() {
-        activity.runOnUiThread(new Runnable() {
+        googleApiClient = new GoogleApiClient.Builder(activity).addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
             @Override
-            public void run() {
-                googleApiClient = new GoogleApiClient.Builder(activity).addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
-                    @Override
-                    public void onConnected(Bundle bundle) {
-                        gpgs.setClient(googleApiClient);
-                        GodotLib.calldeferred(instance_id, "_on_google_play_game_services_connected", new Object[] { });
-                        Log.d(TAG, "GPGS: onConnected");
-                    }
-                    @Override
-                    public void onConnectionSuspended(int cause) {
-                        if (cause == GoogleApiClient.ConnectionCallbacks.CAUSE_NETWORK_LOST) {
-                            GodotLib.calldeferred(instance_id, "_on_google_play_game_services_suspended_network_lost", new Object[] { });
-                            Log.d(TAG, "GPGS: onConnectionSuspended -> Network Lost");
-                        } else if (cause == GoogleApiClient.ConnectionCallbacks.CAUSE_SERVICE_DISCONNECTED) {
-                            GodotLib.calldeferred(instance_id, "_on_google_play_game_services_suspended_service_disconnected", new Object[] { });
-                            Log.d(TAG, "GPGS: onConnectionSuspended -> Service Disconnected");
-                        } else {
-                            GodotLib.calldeferred(instance_id, "_on_google_play_game_services_suspended_unknown", new Object[] { });
-                            Log.d(TAG, "GPGS: onConnectionSuspended -> Unknown");
-                        }
-                    }
-                }).addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
-                    @Override
-                    public void onConnectionFailed(ConnectionResult result) {
-                        Log.i(TAG, "GPGS: onConnectionFailed result code: " + String.valueOf(result));
-                        if (isResolvingConnectionFailure) return; // Already resolving
-                        isResolvingConnectionFailure = true;
-                        if (!resolveConnectionFailure(result, RC_SIGN_IN)) {
-                            isResolvingConnectionFailure = false;
-                        }
-                    }
-                })
-                .addApi(Games.API).addScope(Games.SCOPE_GAMES)
-                .addApi(Plus.API).addScope(Plus.SCOPE_PLUS_LOGIN)
-                .addApi(Drive.API).addScope(Drive.SCOPE_APPFOLDER)
-                .build();
-                GodotLib.calldeferred(instance_id, "_on_google_play_game_services_initiated", new Object[] { });
+            public void onConnected(Bundle bundle) {
+                gpgs.setClient(googleApiClient);
+                GodotLib.calldeferred(instance_id, "_on_google_play_game_services_connected", new Object[] { });
+                Log.d(TAG, "GPGS: onConnected");
             }
-        });
+            @Override
+            public void onConnectionSuspended(int cause) {
+                if (cause == GoogleApiClient.ConnectionCallbacks.CAUSE_NETWORK_LOST) {
+                    GodotLib.calldeferred(instance_id, "_on_google_play_game_services_suspended_network_lost", new Object[] { });
+                    Log.d(TAG, "GPGS: onConnectionSuspended -> Network Lost");
+                } else if (cause == GoogleApiClient.ConnectionCallbacks.CAUSE_SERVICE_DISCONNECTED) {
+                    GodotLib.calldeferred(instance_id, "_on_google_play_game_services_suspended_service_disconnected", new Object[] { });
+                    Log.d(TAG, "GPGS: onConnectionSuspended -> Service Disconnected");
+                } else {
+                    GodotLib.calldeferred(instance_id, "_on_google_play_game_services_suspended_unknown", new Object[] { });
+                    Log.d(TAG, "GPGS: onConnectionSuspended -> Unknown");
+                }
+            }
+        }).addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
+            @Override
+            public void onConnectionFailed(ConnectionResult result) {
+                Log.i(TAG, "GPGS: onConnectionFailed result code: " + String.valueOf(result));
+                if (isResolvingConnectionFailure) return; // Already resolving
+                isResolvingConnectionFailure = true;
+                if (!resolveConnectionFailure(result, RC_SIGN_IN)) {
+                    isResolvingConnectionFailure = false;
+                }
+            }
+        })
+        .addApi(Games.API).addScope(Games.SCOPE_GAMES)
+        .addApi(Plus.API).addScope(Plus.SCOPE_PLUS_LOGIN)
+        .addApi(Drive.API).addScope(Drive.SCOPE_APPFOLDER)
+        .build();
+        GodotLib.calldeferred(instance_id, "_on_google_play_game_services_initiated", new Object[] { });
     }
 
     public boolean resolveConnectionFailure(ConnectionResult result, int requestCode) {

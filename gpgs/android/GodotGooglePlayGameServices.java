@@ -1,10 +1,12 @@
 package org.godotengine.godot;
 
+import android.util.Log;
 import android.app.Activity;
 import android.content.Intent;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import org.godotengine.godot.gpgs.Client;
+import org.godotengine.godot.gpgs.Network;
 import org.godotengine.godot.gpgs.Achievements;
 import org.godotengine.godot.gpgs.Leaderboards;
 import org.godotengine.godot.gpgs.Snapshots;
@@ -19,6 +21,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase {
     private GoogleApiClient googleApiClient = null;
 
     private Client client;
+    private Network network;
     private Leaderboards leaderboards;
     private Snapshots snapshots;
     private Achievements achievements;
@@ -42,6 +45,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase {
         this.activity = activity;
         registerClass("GodotGooglePlayGameServices", new String[] {
             "init", "signIn", "signOut", "getStatus",
+            "isOnline", "isWifiConnected", "isMobileConnected",
             "saveSnapshot", "loadFromSnapshot",
             "unlockAchy", "incrementAchy", "showAchyList",
             "leaderSubmit", "showLeaderList", "getLeaderboardValue",
@@ -59,6 +63,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase {
     public void init(final int instance_id) {
         this.instance_id = instance_id;
         client = new Client(activity, googleApiClient, instance_id, this);
+        network = new Network(activity);
     }
 
     public void setClient(GoogleApiClient googleApiClient) {
@@ -83,7 +88,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase {
                     realTimeMultiplayer.onActivityResult(request, response, intent);
                 break;
         }
-	}
+    }
 
     /**
      * Sign In method
@@ -91,15 +96,15 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase {
     public void signIn() {
         if (client == null) return;
         client.signIn();
-	}
+    }
 
     /**
      * Sign Out method
      */
-	public void signOut() {
+    public void signOut() {
         if (client == null) return;
         client.signOut();
-	}
+    }
 
     /**
      * Get the client status
@@ -108,7 +113,37 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase {
     public int getStatus() {
         if (client == null) return 0;
         return client.getStatus();
-	}
+    }
+
+    /* Network Methods
+     * ********************************************************************** */
+    
+    /**
+     * Check network connection
+     * @return boolean
+     */
+    public boolean isOnline() {
+        if (network == null) return false;
+        return network.isOnline();
+    }
+
+    /**
+     * Check network connection
+     * @return boolean
+     */
+    public boolean isWifiConnected() {
+        if (network == null) return false;
+        return network.isWifiConnected();
+    }
+
+    /**
+     * Check network connection
+     * @return boolean
+     */
+    public boolean isMobileConnected() {
+        if (network == null) return false;
+        return network.isMobileConnected();
+    }
 
     /* Snapshots Methods
      * ********************************************************************** */
@@ -174,7 +209,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase {
     public void leaderSubmit(final String id, final int score) {
         if (leaderboards == null) return;
         leaderboards.leaderSubmit(id, score);
- 	}
+    }
 
     /**
      * Show leader board

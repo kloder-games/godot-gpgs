@@ -26,6 +26,7 @@ public class Client {
     private static final int STATUS_CONNECTING = 1;
     private static final int STATUS_CONNECTED = 2;
     public static final int RC_SIGN_IN = 9001;
+    private static final int REQUEST_RESOLVE_ERROR = 1001;
 
     private Activity activity = null;
     private int instance_id = 0;
@@ -72,7 +73,7 @@ public class Client {
                 Log.i(TAG, "GPGS: onConnectionFailed result code: " + String.valueOf(result));
                 if (isResolvingConnectionFailure) return; // Already resolving
                 isResolvingConnectionFailure = true;
-                if (!resolveConnectionFailure(result, RC_SIGN_IN)) {
+                if (!resolveConnectionFailure(result, REQUEST_RESOLVE_ERROR)) {
                     isResolvingConnectionFailure = false;
                 }
             }

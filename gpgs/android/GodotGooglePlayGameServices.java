@@ -78,6 +78,7 @@ public class GodotGooglePlayGameServices extends Godot.SingletonBase {
     protected void onMainActivityResult(int request, int response, Intent intent) {
         switch(request) {
             case Client.RC_SIGN_IN:
+            case Client.REQUEST_RESOLVE_ERROR:
                 if (client != null)
                     client.onMainActivityResult(request, response, intent);
                 break;

@@ -111,12 +111,14 @@ public class Client {
     }
 
     public void onMainActivityResult(int requestCode, int responseCode, Intent intent) {
-		switch(requestCode) {
-            case Client.RC_SIGN_IN:
-            case Client.REQUEST_RESOLVE_ERROR:
-                isResolvingConnectionFailure = false;
-                if(!googleApiClient.isConnecting() && !googleApiClient.isConnected()) googleApiClient.connect();
-                break;
+        if (responseCode == activity.RESULT_OK) {
+            switch(requestCode) {
+                case Client.RC_SIGN_IN:
+                case Client.REQUEST_RESOLVE_ERROR:
+                    isResolvingConnectionFailure = false;
+                    if(!googleApiClient.isConnecting() && !googleApiClient.isConnected()) googleApiClient.connect();
+                    break;
+            }
         }
 	}
 
